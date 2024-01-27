@@ -22,7 +22,7 @@ async function uploadCandidate (req, res) {
     phone_number,
     has_own_transport,
     has_work_experience,
-    current_position,
+    current_position_id,
     education_id,
     availability_id,
     location_id,
@@ -38,10 +38,10 @@ async function uploadCandidate (req, res) {
 
   const query = {
     text: `INSERT INTO public."Candidates"(
-      first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position, education_id, availability_id, upload_date, user_id, location_id)
+      first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id)
       overriding system value
      VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning *`,
-     values: [first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position, education_id, availability_id, upload_date, user_id, location_id]
+     values: [first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id]
   }
   
   try {
@@ -62,6 +62,7 @@ async function uploadCandidate (req, res) {
     await client.query('ROLLBACK')
 
     console.log(err);
+
 
     res.status(400).send({error: err})
 

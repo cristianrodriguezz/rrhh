@@ -15,7 +15,7 @@ const candidateSchema = z.object({
   phone_number: z.string().min(1).max(20),
   has_own_transport: z.boolean(),
   has_work_experience: z.boolean(),
-  current_position: z.string().min(1).max(255),
+  current_position_id: z.number().max(100).int().positive(),
   education_id: z.number().int().positive(),
   availability_id: z.number().int().positive(),
   location_id: z.number().int().positive(),

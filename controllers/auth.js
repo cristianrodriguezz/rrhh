@@ -27,9 +27,6 @@ const register = async (req, res) => {
     }
 
     const response = await client.query(queryRegister)
-
-    
-    console.log(response.rows[0])
     
     await client.query('COMMIT')
     

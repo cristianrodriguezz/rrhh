@@ -5,6 +5,7 @@ const { s3Client } = require('../config/aws3')
 const { validationResult } = require('express-validator')
 const { validateCandidate, validateUserId } = require('../validators/candidate')
 
+
 const AWS_BUCKET_NAME=process.env.AWS_BUCKET_NAME
 
 async function uploadCandidate (req, res) {
@@ -49,8 +50,6 @@ async function uploadCandidate (req, res) {
     await client.query('BEGIN')
 
     const { rows } = await pool.query(query)
-
-    console.log(rows);
 
 
     await client.query('COMMIT')
@@ -115,7 +114,6 @@ const uploadCv =  async ( req, res) => {
 
     const response = await s3Client.send(command);
 
-    console.log(response);
 
     await client.query('COMMIT')
 
@@ -139,25 +137,22 @@ const uploadCv =  async ( req, res) => {
 const getCandidates = async (req, res) => {
   
   const errors = validationResult(req)
+  console.log(errors.errors);
 
   if(!errors.isEmpty()) return res.send({error: errors.array()})
 
-  const { user_id } = req.query
+  const { limit, offset, user_id, q } = req.query
 
   const client = await pool.connect()
 
   const query = {
-    text: `SELECT *
-    FROM public."Candidates"
-    WHERE user_id = $1`,
-    values: [user_id]
+    text: `SELECT * FROM get_data_with_pagination($1, $2, $3, $4) `,
+    values: [limit, offset ,user_id, q]
   }
 
   try {
 
     const { rows } = await client.query(query)
-
-    console.log(rows);
 
     res.send(rows)
     
@@ -172,6 +167,7 @@ const getCandidates = async (req, res) => {
   }
 
 }
+
 
 module.exports = { uploadCandidate, uploadCv, getCandidates }
 

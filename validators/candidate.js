@@ -8,6 +8,12 @@ const validateUploadCv = [
 const validateUserId = [
   query('user_id').isInt().withMessage('UserId must be a valid integer.'),
 ]
+const validateGetCandidatePagination = [
+  query('user_id').isInt().withMessage('UserId must be a valid integer.'),
+  query('limit').isInt().withMessage('Limit must be a valid integer.'),
+  query('offset').isInt().withMessage('Offset must be a valid integer.'),
+  query('q').isString().withMessage('Q must be a valid string.'),
+]
 const candidateSchema = z.object({
   first_name: z.string().min(1).max(255),
   last_name: z.string().min(1).max(255),
@@ -28,4 +34,4 @@ function validateCandidate (object) {
   return candidateSchema.safeParse(object)
 }
 
-module.exports = { validateUploadCv , validateUserId , validateCandidate}
+module.exports = { validateUploadCv , validateUserId , validateGetCandidatePagination , validateCandidate}

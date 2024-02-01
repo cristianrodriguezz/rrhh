@@ -137,7 +137,7 @@ const uploadCv =  async ( req, res) => {
 const getCandidates = async (req, res) => {
   
   const errors = validationResult(req)
-  console.log(errors.errors);
+
 
   if(!errors.isEmpty()) return res.send({error: errors.array()})
 
@@ -147,6 +147,58 @@ const getCandidates = async (req, res) => {
 
   const query = {
     text: `SELECT * FROM get_data_with_pagination($1, $2, $3, $4) `,
+    values: [limit, offset ,user_id, q]
+  }
+  const queryPagination = {
+    text: `SELECT 
+    CEIL(COUNT(*)::NUMERIC / $1) AS total_pages
+    FROM 
+    get_data_with_pagination(1, 999999, $2, $3);
+    `,
+    values: [offset, user_id, q]
+  }
+
+  try {
+
+    const responseData = await client.query(query)
+
+    const responsePagination  = await client.query(queryPagination)
+
+    res.send({ 
+      data: responseData.rows,
+      totalPages: responsePagination.rows[0].total_pages,
+      page: limit
+     })
+    
+  } catch (err) {
+
+    res.status(400).send({error: err})
+
+  } finally {
+
+    client.release()
+
+  }
+
+}
+
+const getTotalPaginates = async (req,res) => {
+
+  const errors = validationResult(req)
+  console.log(errors.errors);
+
+  if(!errors.isEmpty()) return res.send({error: errors.array()})
+
+  const { limit, offset, user_id, q } = req.query
+
+  const client = await pool.connect()
+
+  const query = {
+    text: `SELECT 
+    CEIL(COUNT(*)::NUMERIC / 10) AS total_pages
+    FROM 
+    get_data_with_pagination($1, 999999, $3, $4);
+    `,
     values: [limit, offset ,user_id, q]
   }
 
@@ -165,7 +217,6 @@ const getCandidates = async (req, res) => {
     client.release()
 
   }
-
 }
 
 

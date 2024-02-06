@@ -4,6 +4,7 @@ const fs = require('fs')
 const { s3Client } = require('../config/aws3')
 const { validationResult } = require('express-validator')
 const { validateCandidate, validateUserId } = require('../validators/candidate')
+const { getCandidatesQuery } = require('../utils/handleQuerys')
 
 
 const AWS_BUCKET_NAME=process.env.AWS_BUCKET_NAME
@@ -20,6 +21,8 @@ async function uploadCandidate (req, res) {
     first_name,
     last_name,
     age,
+    cuil,
+    email,
     phone_number,
     has_own_transport,
     has_work_experience,
@@ -39,10 +42,10 @@ async function uploadCandidate (req, res) {
 
   const query = {
     text: `INSERT INTO public."Candidates"(
-      first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id)
+      first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id, cuil, email)
       overriding system value
-     VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning *`,
-     values: [first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id]
+     VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning *`,
+     values: [first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id, cuil, email]
   }
   
   try {
@@ -50,7 +53,6 @@ async function uploadCandidate (req, res) {
     await client.query('BEGIN')
 
     const { rows } = await pool.query(query)
-
 
     await client.query('COMMIT')
 
@@ -60,8 +62,9 @@ async function uploadCandidate (req, res) {
 
     await client.query('ROLLBACK')
 
-    console.log(err);
+    let errorUniqueEmail = err?.detail?.includes('email','exists')
 
+    if(errorUniqueEmail) return res.status(409).send({error: 'Email already exists'})
 
     res.status(400).send({error: err})
 
@@ -145,29 +148,28 @@ const getCandidates = async (req, res) => {
 
   const client = await pool.connect()
 
+  const { selectQuery, combinedValues, totalPagesQuery, values } = getCandidatesQuery(req.query)
+
+
   const query = {
-    text: `SELECT * FROM get_data_with_pagination($1, $2, $3, $4) `,
-    values: [limit, offset ,user_id, q]
+    text: selectQuery,
+    values: combinedValues
   }
   const queryPagination = {
-    text: `SELECT 
-    CEIL(COUNT(*)::NUMERIC / $1) AS total_pages
-    FROM 
-    get_data_with_pagination(1, 999999, $2, $3);
-    `,
-    values: [offset, user_id, q]
+    text: totalPagesQuery,
+    values
   }
 
-  try {
 
+  try {
+    const responsePagination  = await client.query(queryPagination)
+    console.log(responsePagination.rows);
     const responseData = await client.query(query)
 
-    const responsePagination  = await client.query(queryPagination)
 
     res.send({ 
       data: responseData.rows,
       totalPages: responsePagination.rows[0].total_pages,
-      page: limit
      })
     
   } catch (err) {
@@ -182,42 +184,6 @@ const getCandidates = async (req, res) => {
 
 }
 
-const getTotalPaginates = async (req,res) => {
-
-  const errors = validationResult(req)
-  console.log(errors.errors);
-
-  if(!errors.isEmpty()) return res.send({error: errors.array()})
-
-  const { limit, offset, user_id, q } = req.query
-
-  const client = await pool.connect()
-
-  const query = {
-    text: `SELECT 
-    CEIL(COUNT(*)::NUMERIC / 10) AS total_pages
-    FROM 
-    get_data_with_pagination($1, 999999, $3, $4);
-    `,
-    values: [limit, offset ,user_id, q]
-  }
-
-  try {
-
-    const { rows } = await client.query(query)
-
-    res.send(rows)
-    
-  } catch (err) {
-
-    res.status(400).send({error: err})
-
-  } finally {
-
-    client.release()
-
-  }
-}
 
 
 module.exports = { uploadCandidate, uploadCv, getCandidates }

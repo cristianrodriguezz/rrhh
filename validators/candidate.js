@@ -11,7 +11,7 @@ const validateUserId = [
 const validateGetCandidatePagination = [
   query('user_id').isInt().withMessage('UserId must be a valid integer.'),
   query('limit').isInt().withMessage('Limit must be a valid integer.'),
-  query('offset').isInt().withMessage('Offset must be a valid integer.'),
+
   query('q').isString().withMessage('Q must be a valid string.'),
 ]
 const candidateSchema = z.object({
@@ -19,12 +19,14 @@ const candidateSchema = z.object({
   last_name: z.string().min(1).max(255),
   age: z.number().max(100).int().positive(),
   phone_number: z.string().min(1).max(20),
+  cuil: z.number().int().positive(),
   has_own_transport: z.boolean(),
   has_work_experience: z.boolean(),
   current_position_id: z.number().max(100).int().positive(),
   education_id: z.number().int().positive(),
   availability_id: z.number().int().positive(),
   location_id: z.number().int().positive(),
+  email: z.string().max(40),
   upload_date: z.string().refine((date) => Date.parse(date) > 0 || date === null, {
     message: "Invalid date format",
   }).default(() => new Date().toISOString()),

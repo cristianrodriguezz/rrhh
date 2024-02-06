@@ -1,9 +1,10 @@
 const cors = require('cors')
 
 const ACCPETED_ORIGINS = [
-  'http://localhost:8080',
+  'https://rrhhfrontend-hebjeuf6s-cristianrodriguezz.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
+  'https://rrhhfrontend.vercel.app',
 ]
 
 const corsMiddleware = ({ acceptedOrigins = ACCPETED_ORIGINS} = {} ) => cors({

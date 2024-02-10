@@ -1,6 +1,8 @@
 const pool = require('../config/db')
 const { PutObjectCommand} = require('@aws-sdk/client-s3')
 const fs = require('fs')
+const fsremove = require('fs').promises
+const path = require('path');
 const { s3Client } = require('../config/aws3')
 const { validationResult } = require('express-validator')
 const { validateCandidate, validateUserId } = require('../validators/candidate')
@@ -56,15 +58,17 @@ async function uploadCandidate (req, res) {
 
     await client.query('COMMIT')
 
-    res.send(rows)
+    res.send(rows[0])
 
   } catch (err) {
 
     await client.query('ROLLBACK')
 
     let errorUniqueEmail = err?.detail?.includes('email','exists')
+    let errorUniqueCuil = err?.detail?.includes('cuil','exists')
 
     if(errorUniqueEmail) return res.status(409).send({error: 'Email already exists'})
+    if(errorUniqueCuil) return res.status(401).send({error: 'Cuil already exists'})
 
     res.status(400).send({error: err})
 
@@ -83,22 +87,30 @@ const uploadCv =  async ( req, res) => {
   const { user_id, candidate_id } = req.query
 
   const stream = fs.createReadStream(req.files['cv'].tempFilePath)
+
+  
   
   const extension = req.files['cv'].mimetype.split('/')[1]
-
+  
+  
+  
   const generateRandomFileName = () => {
     const randomBigInt = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
     return `${user_id}_${randomBigInt}.${extension}`;
   }
-
+  
   const command = new PutObjectCommand({
-      Bucket: AWS_BUCKET_NAME,
-      Key: generateRandomFileName(),
-      Body: stream,
-    })
+    Bucket: AWS_BUCKET_NAME,
+    Key: generateRandomFileName(),
+    Body: stream,
+  })
+
+
+  const FOLDER_TO_REMOVE = 'uploads'
+
 
   const client = await pool.connect()
-
+  
   const cv = `https://rrhh-recopilacion-de-cv.s3.us-east-2.amazonaws.com/${command.input.Key}`
 
   const queryInsertCv = {
@@ -133,6 +145,18 @@ const uploadCv =  async ( req, res) => {
   } finally {
 
     client.release()
+    fsremove.readdir(FOLDER_TO_REMOVE)
+    .then(files => {
+      const unlinkPromises = files.map(file => {
+        const filePath = path.join(FOLDER_TO_REMOVE, file)
+        return fsremove.unlink(filePath)
+      })
+  
+      return Promise.all(unlinkPromises)
+    }).catch(err => {
+      console.error(`Something wrong happened removing files of ${FOLDER_TO_REMOVE}`)
+    })
+  
 
   }
 
@@ -163,7 +187,7 @@ const getCandidates = async (req, res) => {
 
   try {
     const responsePagination  = await client.query(queryPagination)
-    console.log(responsePagination.rows);
+
     const responseData = await client.query(query)
 
 

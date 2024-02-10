@@ -6,7 +6,7 @@ const { verifyToken } = require('../utils/handleJwt')
 const authMiddleware = async (req, res, next) => {
 
   const path = req.originalUrl
-  console.log(path);
+
 
   if (allowedRoutes.includes(path.split('?')[0])) return next();
   

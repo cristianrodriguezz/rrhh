@@ -165,10 +165,7 @@ const getCandidates = async (req, res) => {
   
   const errors = validationResult(req)
 
-
   if(!errors.isEmpty()) return res.send({error: errors.array()})
-
-  const { limit, offset, user_id, q } = req.query
 
   const client = await pool.connect()
 
@@ -187,9 +184,8 @@ const getCandidates = async (req, res) => {
 
   try {
     const responsePagination  = await client.query(queryPagination)
-
+    
     const responseData = await client.query(query)
-
 
     res.send({ 
       data: responseData.rows,

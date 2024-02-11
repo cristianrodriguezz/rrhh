@@ -7,27 +7,30 @@ const { validateRegister , validateLogin} = require("../validators/user")
 
 const register = async (req, res) => {
   const result = validateRegister(req.body)
-
+  
   if(result.error) return res.status(400).send({ error: result.error.issues })
-
+  
+  
   const { name, lastname, email, password , username} = result.data
-
+  
   const encryptPw = await encrypt(password)
-
+  
   const client = await pool.connect()
-
+  
   try {
     await client.query('BEGIN')
 
+    
     const queryRegister = {
       text: `INSERT INTO public."Users"(
         name, lastname, email, password, username)
-       VALUES ( $1, $2, $3, $4, $5) returning name, lastname, email`,
-      values: [name,lastname,email,encryptPw, username]
-    }
-
-    const response = await client.query(queryRegister)
+        overriding system value
+        VALUES ( $1, $2, $3, $4, $5) returning name, lastname, email`,
+        values: [name,lastname,email,encryptPw, username]
+      }
     
+      const response = await client.query(queryRegister)
+      
     await client.query('COMMIT')
     
     res.send({data: response.rows[0]})
@@ -45,8 +48,11 @@ const register = async (req, res) => {
       res.status(409).json({ error: 'Username en uso, elije otro.' })
     }
 
+    res.status(400).json({ error: error })
+
   }finally{
     client.release()
+
   }
 }
 const login = async (req, res) => {
@@ -90,9 +96,10 @@ const login = async (req, res) => {
       id: user.id,
       username: user.username
     }
+    const token = await tokenSign(user)
 
     const data = {
-      token: await tokenSign(user),
+      token: token,
       user: userData
     }
 
@@ -101,6 +108,7 @@ const login = async (req, res) => {
   } catch (error) {
 
     res.status(409).json({ error: error })
+    console.log(error);
 
   } finally{
     client.release()

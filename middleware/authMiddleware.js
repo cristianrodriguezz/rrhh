@@ -1,16 +1,13 @@
 const pool = require('../config/db');
 const allowedRoutes = require('./allowedRoutes');
-const { handleHttpError } = require('../utils/handleError')
 const { verifyToken } = require('../utils/handleJwt')
 
 const authMiddleware = async (req, res, next) => {
 
   const path = req.originalUrl
 
-
   if (allowedRoutes.includes(path.split('?')[0])) return next();
-  
-  const client = await pool.connect()
+
   try {
 
     if (!req.headers.authorization) {
@@ -26,26 +23,12 @@ const authMiddleware = async (req, res, next) => {
       return
     }
 
-    const query = {
-      text: `SELECT *
-      FROM public."Users"
-      where id = $1`,
-      values: [dataToken.id]
-    }
-
-    const response = await client.query(query)
-
-    const user = response.rows[0]
-
-    req.user = user
     next()
   } catch (e) {
 
     res.status(401).send('NOT_SESSION')
 
-  } finally{
-    client.release()
-  }
+  } 
 }
 
 module.exports = authMiddleware

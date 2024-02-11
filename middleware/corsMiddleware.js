@@ -1,7 +1,7 @@
 const cors = require('cors')
 
 const ACCPETED_ORIGINS = [
-  'https://rrhhfrontend-hebjeuf6s-cristianrodriguezz.vercel.app',
+  'https://lucianabustos-rrhh.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
   'https://rrhhfrontend.vercel.app',

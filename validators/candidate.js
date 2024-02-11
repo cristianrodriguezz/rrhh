@@ -17,7 +17,7 @@ const validateGetCandidatePagination = [
 const candidateSchema = z.object({
   first_name: z.string().min(1).max(255),
   last_name: z.string().min(1).max(255),
-  age: z.number().max(100).int().positive(),
+  age: z.string().datetime(),
   phone_number: z.number().int().positive(),
   cuil: z.number().int().positive(),
   has_own_transport: z.boolean(),
@@ -25,7 +25,7 @@ const candidateSchema = z.object({
   current_position_id: z.number().max(100).int().positive(),
   education_id: z.number().int().positive(),
   availability_id: z.number().int().positive(),
-  location_id: z.number().int().positive(),
+  lenguage_id:  z.number().nullable().optional(),
   email: z.string().max(40),
   upload_date: z.string().refine((date) => Date.parse(date) > 0 || date === null, {
     message: "Invalid date format",

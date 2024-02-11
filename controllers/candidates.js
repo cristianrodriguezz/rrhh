@@ -30,9 +30,12 @@ async function uploadCandidate (req, res) {
     has_work_experience,
     current_position_id,
     education_id,
+    lenguage_id,
     availability_id,
     location_id,
   } = req.body
+
+  const lenguagueIfExists = lenguage_id === undefined ? null : lenguage_id;
 
   const upload_date = new Date().toISOString()
 
@@ -44,10 +47,10 @@ async function uploadCandidate (req, res) {
 
   const query = {
     text: `INSERT INTO public."Candidates"(
-      first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id, cuil, email)
+      first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id, cuil, email, lenguage_id)
       overriding system value
-     VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning *`,
-     values: [first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id, cuil, email]
+     VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) returning *`,
+     values: [first_name, last_name, age, phone_number, has_own_transport, has_work_experience, current_position_id, education_id, availability_id, upload_date, user_id, location_id, cuil, email, lenguagueIfExists]
   }
   
   try {
@@ -63,6 +66,8 @@ async function uploadCandidate (req, res) {
   } catch (err) {
 
     await client.query('ROLLBACK')
+
+    console.log(err);
 
     let errorUniqueEmail = err?.detail?.includes('email','exists')
     let errorUniqueCuil = err?.detail?.includes('cuil','exists')

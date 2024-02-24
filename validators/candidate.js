@@ -3,7 +3,7 @@ const { z } = require('zod');
 
 const validateUploadCv = [
   query('user_id').isInt().withMessage('UserId must be a valid integer.'),
-  query('candidate_id').isInt().withMessage('UserId must be a valid integer.')
+  query('candidate_id').isInt().withMessage('Candidate_id must be a valid integer.')
 ]
 const validateUserId = [
   query('user_id').isInt().withMessage('UserId must be a valid integer.'),

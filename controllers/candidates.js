@@ -6,7 +6,8 @@ const path = require('path');
 const { s3Client } = require('../config/aws3')
 const { validationResult } = require('express-validator')
 const { validateCandidate, validateUserId } = require('../validators/candidate')
-const { getCandidatesQuery } = require('../utils/handleQuerys')
+const { getCandidatesQuery, buildUpdateQuery } = require('../utils/handleQuerys');
+const { cachedDataVersionTag } = require('v8');
 
 
 const AWS_BUCKET_NAME=process.env.AWS_BUCKET_NAME
@@ -208,8 +209,94 @@ const getCandidates = async (req, res) => {
   }
 
 }
+const deleteCandidateById = async (req, res) => {
+  
+  const errors = validationResult(req)
+
+  if(!errors.isEmpty()) return res.send({error: errors.array()})
+
+  const client = await pool.connect()
+
+  const { user_id , candidate_id } = req.query
+
+  const queryDeleteCandidate = {
+    text: `DELETE FROM public."Candidates"
+    WHERE user_id = $1 and candidate_id = $2;`,
+    values: [user_id, candidate_id]
+  }
+
+
+  try {
+
+    await client.query('BEGIN')
+    
+    await client.query(queryDeleteCandidate)
+    
+    res.send({data: 'Delete successfully'})
+    
+    await client.query('COMMIT')
+
+  } catch (err) {
+    
+    res.status(400).send({error: err})
+    
+  } finally {
+    await client.query('ROLLBACK')
+
+    client.release()
+
+  }
+
+}
+
+const updateCandidate = async (req, res) => {
+
+  const errors = validationResult(req)
+
+  if(!errors.isEmpty()) return res.send({error: errors.array()})
+
+  const {user_id, candidate_id } = req.query
+
+  const client = await pool.connect()
+
+  const queryUpdate = buildUpdateQuery(req.body, user_id, candidate_id);
+
+  const querySelectCandidate = {
+    text: `SELECT *
+    FROM public."Candidates"
+    where user_id = $1 and candidate_id = $2`,
+    values: [user_id, candidate_id]
+  }
+  
+
+  try {
+
+    await client.query('BEGIN')
+
+    const responseSelectCandidate = await client.query(querySelectCandidate)
+
+    if(responseSelectCandidate.rowCount === 0) return res.status(400).send({error: "Not found candidate"})
+
+    const response = await client.query(queryUpdate)
+
+    res.send({data: 'Update successfully'})
+    
+    await client.query('COMMIT')
+    
+  } catch (error) {
+
+    res.status(400).send({error: error})
+    
+    
+  }finally{
+
+    await client.query('ROLLBACK')
+
+    client.release()
+  }
+}
 
 
 
-module.exports = { uploadCandidate, uploadCv, getCandidates }
+module.exports = { uploadCandidate, uploadCv, getCandidates , deleteCandidateById, updateCandidate}
 

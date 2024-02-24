@@ -19,9 +19,9 @@ const getCandidatesQuery = (selectFields) => {
       select.push(`AND ${key} = $${values.length + 5}`);
       values.push(selectFields[key]);
       selectPagination.push(`AND ${key} = $${values.length}`)
-
     }
   }
+
 
 
   if (select.length === 0) {
@@ -153,6 +153,35 @@ const getCandidatesQuery = (selectFields) => {
 
 
   return { selectQuery, combinedValues, totalPagesQuery, values };
-};
+}
 
-module.exports = { getCandidatesQuery };
+
+const buildUpdateQuery = (data, user_id, candidate_id) => {
+  let text = 'UPDATE public."Candidates" SET'
+  let values = []
+  let index = 1
+
+  const hasNonEmptyValue = Object.values(data).some(value => value !== undefined && value !== null && value !== '')
+
+  if (!hasNonEmptyValue) {
+    return { text: '', values: [] }
+  }
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      text += ` ${key} = $${index},`
+      values.push(value)
+      index++
+    }
+  })
+  
+  text = text.slice(0, -1) + ` WHERE user_id = $${index} and candidate_id = $${index + 1} `
+  values.push(user_id, candidate_id)
+
+  console.log(text);
+
+  return { text, values }
+}
+
+
+module.exports = { getCandidatesQuery, buildUpdateQuery };

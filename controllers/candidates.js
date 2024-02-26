@@ -296,7 +296,45 @@ const updateCandidate = async (req, res) => {
   }
 }
 
+const getCvByCandidateId = async (req, res) => {
+  
+  const errors = validationResult(req)
+
+  if(!errors.isEmpty()) return res.send({error: errors.array()})
+
+  const {candidate_id } = req.query
+
+  const client = await pool.connect()
+
+  const query =  {
+    text: `SELECT id, link, candidate_id
+    FROM public."Cvs"
+    where candidate_id = $1`,
+    values: [candidate_id]
+  }
+
+  try {
+
+    const { rows } = await client.query(query)
+
+    console.log(rows);
+
+    if(!rows) return res.status(400).send({error: "Not found candidate"})
+
+    res.send({data: rows[0]})
+    
+  } catch (error) {
+
+    res.status(400).send({error: error})
+    
+    
+  }finally{
+
+    client.release()
+  }
+}
 
 
-module.exports = { uploadCandidate, uploadCv, getCandidates , deleteCandidateById, updateCandidate}
+
+module.exports = { uploadCandidate, uploadCv, getCandidates , deleteCandidateById, updateCandidate, getCvByCandidateId}
 

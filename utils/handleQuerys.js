@@ -182,6 +182,50 @@ const buildUpdateQuery = (data, user_id, candidate_id) => {
 
   return { text, values }
 }
+function buildQuery(candidateIds, userId) {
+  // Generar la parte de la consulta SQL para los candidate_id
+  const candidateIdFilter = candidateIds.map((_, index) => `$${index + 2}`).join(',');
 
+  // Construir la consulta SQL
+  const query = {
+    text: `SELECT 
+      c.candidate_id,
+      c.first_name,
+      c.last_name,
+      c.age,
+      c.phone_number,
+      c.has_own_transport,
+      c.has_work_experience,
+      e.education,
+      av.availability_schedule,
+      c.upload_date,
+      c.user_id,
+      c.cuil,
+      l.name AS location,
+      cs.name AS status,
+      cv.link AS cv_link,
+      po.current_position
+    FROM 
+      public."Candidates" c
+    LEFT JOIN 
+      public."Cvs" cv ON c.candidate_id = cv.candidate_id
+    LEFT JOIN 
+      public."Education" e ON c.education_id = e.education_id
+    LEFT JOIN 
+      public."Availability" av ON c.availability_id = av.availability_id
+    LEFT JOIN 
+      public."Positions" po ON c.current_position_id = po.current_position_id
+    LEFT JOIN 
+      public."CandidateStatus" cs ON c.status_id = cs.status_id
+    LEFT JOIN 
+      public."Location" l ON c.location_id = l.location_id
+    WHERE 
+      c.user_id = $1
+      AND c.candidate_id IN (${candidateIdFilter})`,
+    values: [userId, ...candidateIds]
+  };
 
-module.exports = { getCandidatesQuery, buildUpdateQuery };
+  return query;
+}
+
+module.exports = { getCandidatesQuery, buildUpdateQuery, buildQuery };

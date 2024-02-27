@@ -6,9 +6,8 @@ const path = require('path');
 const { s3Client } = require('../config/aws3')
 const { validationResult } = require('express-validator')
 const { validateCandidate, validateUserId } = require('../validators/candidate')
-const { getCandidatesQuery, buildUpdateQuery } = require('../utils/handleQuerys');
-const { cachedDataVersionTag } = require('v8');
-
+const { getCandidatesQuery, buildUpdateQuery, buildQuery } = require('../utils/handleQuerys');
+const xlsx = require('xlsx');
 
 const AWS_BUCKET_NAME=process.env.AWS_BUCKET_NAME
 
@@ -336,5 +335,67 @@ const getCvByCandidateId = async (req, res) => {
 
 
 
-module.exports = { uploadCandidate, uploadCv, getCandidates , deleteCandidateById, updateCandidate, getCvByCandidateId}
+
+
+const getExcelCandidates = async (req, res) => {
+
+  const errors = validationResult(req)
+
+  if(!errors.isEmpty()) return res.send({error: errors.array()})
+
+  const { user_id, candidateIds } = req.query
+
+  const candidatesArray = []
+
+  const client = await pool.connect();
+
+  const candidateArray = candidateIds.split(',')
+
+  candidateArray.forEach(element => candidatesArray.push(parseInt(element)))
+
+
+  try {
+
+    const query = buildQuery(candidatesArray, user_id);
+
+    const result = await client.query(query);
+
+    // Crear un nuevo libro de Excel
+    const workbook = xlsx.utils.book_new();
+    const ws_name = "Candidates";
+    const ws_data = result.rows;
+
+    // Convertir los datos a un formato adecuado para xlsx
+    const ws = xlsx.utils.json_to_sheet(ws_data);
+
+    // Agregar la hoja al libro de Excel
+    xlsx.utils.book_append_sheet(workbook, ws, ws_name);
+
+    // Convertir el libro de Excel a un buffer
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Establecer las cabeceras de la respuesta para la descarga del archivo
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="candidates.xlsx"',
+      'Content-Length': buffer.length,
+    });
+
+    // Enviar el archivo Excel como respuesta
+    res.end(buffer);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Error al generar el archivo Excel');
+  } finally {
+    await client.release();
+  }
+};
+
+module.exports = {
+  getExcelCandidates,
+};
+
+
+
+module.exports = { uploadCandidate, uploadCv, getCandidates , deleteCandidateById, updateCandidate, getCvByCandidateId, getExcelCandidates}
 

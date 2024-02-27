@@ -189,22 +189,20 @@ function buildQuery(candidateIds, userId) {
   // Construir la consulta SQL
   const query = {
     text: `SELECT 
-      c.candidate_id,
-      c.first_name,
-      c.last_name,
-      c.age,
-      c.phone_number,
-      c.has_own_transport,
-      c.has_work_experience,
-      e.education,
-      av.availability_schedule,
-      c.upload_date,
-      c.user_id,
-      c.cuil,
-      l.name AS location,
-      cs.name AS status,
-      cv.link AS cv_link,
-      po.current_position
+      c.candidate_id id,
+      c.first_name nombre,
+      c.last_name apellido,
+      c.age fecha_de_nacimiento,
+      c.phone_number teléfono,
+      c.has_own_transport tiene_transporte,
+      c.has_work_experience tiene_experiencia,
+      e.education educación,
+      av.availability_schedule disponibilidad,
+      c.upload_date fecha_de_carga,
+      c.cuil cuil,
+      l.name AS localidad,
+      cv.link AS cv,
+      po.current_position posición
     FROM 
       public."Candidates" c
     LEFT JOIN 
